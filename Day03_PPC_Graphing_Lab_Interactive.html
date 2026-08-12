@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Day 3 — PPC Graphing Lab</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Calibri, Arial, sans-serif; background: #f4f6fa; color: #222; font-size: 15px; }
+
+  .banner { background: #1F4E79; color: white; text-align: center; padding: 16px 20px 12px; }
+  .banner h1 { font-size: 23px; font-weight: bold; margin-bottom: 3px; }
+  .banner h2 { font-size: 14px; color: #BDD7EE; font-style: italic; font-weight: normal; margin-bottom: 3px; }
+  .banner p  { font-size: 12px; color: #BDD7EE; }
+
+  .info-row { display: flex; gap: 12px; padding: 10px 20px 8px; background: white; border-bottom: 2px solid #2E75B6; flex-wrap: wrap; }
+  .info-field { display: flex; align-items: center; gap: 6px; flex: 1; min-width: 150px; }
+  .info-field label { font-weight: bold; color: #1F4E79; white-space: nowrap; font-size: 13px; }
+  .info-field input, .info-field select { border: none; border-bottom: 2px solid #2E75B6; outline: none; flex: 1;
+    font-size: 14px; font-family: Calibri, Arial, sans-serif; padding: 2px 4px; background: transparent; }
+
+  .main { display: flex; }
+  .left-panel { width: 290px; min-width: 260px; background: white; padding: 12px; border-right: 2px solid #D6DCE4; }
+  .right-panel { flex: 1; padding: 10px 12px; background: #f4f6fa; }
+
+  .section-title { font-size: 13px; font-weight: bold; color: #1F4E79; margin-bottom: 5px; border-bottom: 2px solid #2E75B6; padding-bottom: 3px; }
+  .esp { color: #C55A11; font-style: italic; font-size: 11px; }
+
+  /* DATA TABLE */
+  table.data { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 13px; }
+  table.data th { background: #1F4E79; color: white; padding: 5px 6px; text-align: center; }
+  table.data td { border: 1px solid #ccc; padding: 4px 6px; text-align: center; }
+  table.data tr.active td { background: #FFF3CD; font-weight: bold; }
+  table.data tr.done td { background: #e8f5e9; color: #375623; }
+  table.data .check { color: #27ae60; font-weight: bold; }
+
+  /* STEP INDICATOR */
+  .step-box { background: #EEF2F8; border: 2px solid #2E75B6; border-radius: 6px; padding: 10px 12px; margin-bottom: 10px; }
+  .step-box.success { background: #e8f5e9; border-color: #375623; }
+  .step-box.warning { background: #fff3cd; border-color: #C55A11; }
+  .step-num { font-size: 11px; font-weight: bold; color: #2E75B6; text-transform: uppercase; margin-bottom: 3px; }
+  .step-box.success .step-num { color: #375623; }
+  .step-box.warning .step-num { color: #C55A11; }
+  .step-inst { font-size: 13px; font-weight: bold; color: #1F4E79; }
+  .step-box.success .step-inst { color: #375623; }
+  .step-sub  { font-size: 11px; color: #555; margin-top: 3px; }
+
+  /* BUTTONS */
+  .btn { display: inline-block; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;
+    font-family: Calibri, Arial, sans-serif; font-size: 12px; font-weight: bold; margin: 2px 2px 2px 0; transition: opacity 0.15s; }
+  .btn:hover:not(:disabled) { opacity: 0.85; }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-blue   { background: #1F4E79; color: white; }
+  .btn-lblue  { background: #2E75B6; color: white; }
+  .btn-green  { background: #375623; color: white; }
+  .btn-orange { background: #C55A11; color: white; }
+  .btn-gray   { background: #888; color: white; }
+  .btn-red    { background: #8B0000; color: white; }
+
+  /* LEGEND */
+  .legend { font-size: 11px; margin-top: 8px; }
+  .legend-item { display: flex; align-items: center; gap: 5px; margin-bottom: 3px; }
+  .legend-dot  { width: 11px; height: 11px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+  .legend-line { width: 22px; height: 3px; display: inline-block; flex-shrink: 0; }
+
+  /* CANVAS */
+  #graphCanvas { border: 2px solid #2E75B6; border-radius: 4px; background: white; cursor: crosshair; display: block; max-width: 100%; }
+  .graph-title { font-size: 13px; font-weight: bold; color: #1F4E79; margin-bottom: 4px; }
+  #coordDisplay { font-size: 11px; color: #555; margin-top: 4px; min-height: 14px; font-style: italic; }
+  #feedback { font-size: 13px; font-weight: bold; margin-top: 5px; min-height: 20px; }
+  #feedback.ok  { color: #27ae60; }
+  #feedback.err { color: #c0392b; }
+  #feedback.info { color: #1F4E79; }
+
+  /* QUESTIONS */
+  .questions { background: white; padding: 14px 18px; border-top: 3px solid #1F4E79; }
+  .q-title { font-size: 14px; font-weight: bold; color: #1F4E79; margin-bottom: 12px; border-bottom: 2px solid #2E75B6; padding-bottom: 5px; }
+  .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 12px; }
+  .q-box { background: #EEF2F8; border-left: 4px solid #1F4E79; padding: 10px 12px; border-radius: 0 4px 4px 0; }
+  .q-box.q2 { border-left-color: #375623; background: #f0f7ee; }
+  .q-box.q3 { border-left-color: #C55A11; background: #fdf4ee; }
+  .q-box.q4 { border-left-color: #2E75B6; background: #eef4fb; }
+  .q-label { font-weight: bold; color: #1F4E79; font-size: 13px; margin-bottom: 3px; }
+  .q-box.q2 .q-label { color: #375623; }
+  .q-box.q3 .q-label { color: #C55A11; }
+  .q-box.q4 .q-label { color: #2E75B6; }
+  .q-text { font-size: 12px; color: #333; margin-bottom: 2px; line-height: 1.35; }
+  .q-esp  { font-size: 11px; color: #C55A11; font-style: italic; margin-bottom: 5px; line-height: 1.3; }
+
+  .radio-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 6px; }
+  .radio-group label { font-size: 12px; color: #333; display: flex; align-items: center; gap: 6px; cursor: pointer; }
+  .radio-group input[type="radio"] { accent-color: #1F4E79; flex-shrink: 0; }
+  .q-box.q2 .radio-group input[type="radio"] { accent-color: #375623; }
+  .q-box.q3 .radio-group input[type="radio"] { accent-color: #C55A11; }
+
+  textarea { width: 100%; border: 1px solid #ccc; border-radius: 3px; padding: 5px 7px;
+    font-family: Calibri, Arial, sans-serif; font-size: 12px; resize: vertical; min-height: 58px; margin-top: 4px; }
+  textarea:focus { outline: 2px solid #2E75B6; border-color: transparent; }
+  .short-input { width: 100%; border: 1px solid #ccc; border-radius: 3px; padding: 5px 7px;
+    font-family: Calibri, Arial, sans-serif; font-size: 12px; margin-top: 4px; }
+  .short-input:focus { outline: 2px solid #2E75B6; border-color: transparent; }
+
+  /* CONFIDENCE */
+  .conf-box { background: #fff8e1; border-left: 4px solid #f9a825; padding: 10px 14px; border-radius: 0 4px 4px 0; }
+  .conf-box .q-label { color: #e65100; }
+  .conf-box .radio-group { flex-direction: row; flex-wrap: wrap; gap: 10px; margin-top: 6px; }
+  .conf-box .radio-group input[type="radio"] { accent-color: #e65100; }
+
+  /* BOTTOM */
+  .bottom-bar { background: #1F4E79; padding: 10px 18px; display: flex; align-items: center; justify-content: space-between; }
+  .bottom-bar span { color: #BDD7EE; font-size: 12px; }
+  .btn-submit { background: #2ecc71; color: white; font-weight: bold; padding: 8px 22px; border: none;
+    border-radius: 4px; cursor: pointer; font-size: 14px; font-family: Calibri, Arial, sans-serif; margin-right: 8px; }
+  .btn-submit:hover { background: #27ae60; }
+  .btn-submit:disabled { background: #888; cursor: not-allowed; }
+  .btn-print { background: white; color: #1F4E79; font-weight: bold; padding: 8px 16px; border: none;
+    border-radius: 4px; cursor: pointer; font-size: 13px; font-family: Calibri, Arial, sans-serif; }
+
+  /* SUCCESS */
+  #successOverlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.6);
+    z-index: 999; align-items: center; justify-content: center; }
+  #successOverlay.show { display: flex; }
+  .success-card { background: white; border-radius: 8px; padding: 36px 46px; text-align: center; max-width: 400px; }
+  .success-card h2 { color: #27ae60; font-size: 26px; margin-bottom: 8px; }
+  .success-card p  { color: #444; font-size: 14px; line-height: 1.5; margin-bottom: 18px; }
+  .success-card button { background: #1F4E79; color: white; border: none; padding: 9px 24px;
+    border-radius: 4px; font-size: 13px; cursor: pointer; font-family: Calibri, Arial, sans-serif; }
+  #submitError { display: none; color: #ffc7ce; font-size: 12px; margin-left: 10px; }
+
+  @media print {
+    .bottom-bar, #successOverlay { display: none !important; }
+    .banner, table.data th, .q-box, .conf-box, .step-box { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<script>
+  // ── TEACHER: paste your web app URL here after deploying Day03_PPC_Submit_WebApp.gs ──
+  const SUBMIT_URL = 'PASTE_YOUR_WEB_APP_URL_HERE';
+</script>
+
+<!-- BANNER -->
+<div class="banner">
+  <h1>Day 3 — PPC Graphing Lab <span style="font-size:15px;font-weight:normal;color:#BDD7EE;">/ Laboratorio de Gráficas de FPP</span></h1>
+  <h2>Production Possibilities Curve / Frontera de Posibilidades de Producción</h2>
+  <p>Unit 1: Foundations of Economics &nbsp;•&nbsp; Mr. Gibson &nbsp;•&nbsp; Saddleback High School, Room 701</p>
+</div>
+
+<!-- STUDENT INFO -->
+<div class="info-row">
+  <div class="info-field">
+    <label>Name / <span style="color:#C55A11;font-style:italic;font-size:12px;">Nombre:</span></label>
+    <input id="studentName" type="text" placeholder="Your name...">
+  </div>
+  <div class="info-field" style="max-width:130px;">
+    <label>Period / <span style="color:#C55A11;font-style:italic;font-size:12px;">Período:</span></label>
+    <select id="studentPeriod">
+      <option value="">--</option>
+      <option>1</option><option>2</option><option>3</option>
+      <option>4</option><option>5</option><option>6</option><option>7</option>
+    </select>
+  </div>
+  <div class="info-field" style="max-width:160px;">
+    <label>Date / <span style="color:#C55A11;font-style:italic;font-size:12px;">Fecha:</span></label>
+    <input id="studentDate" type="text" placeholder="">
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+  <!-- LEFT PANEL -->
+  <div class="left-panel">
+
+    <div class="section-title">Data Table / <span class="esp">Tabla de Datos</span></div>
+    <p style="font-size:11px;color:#555;margin-bottom:6px;">
+      This country uses all its resources to make robots OR pizzas — or a mix of both.<br>
+      <span class="esp">Este país usa todos sus recursos para hacer robots O pizzas, o una combinación.</span>
+    </p>
+
+    <table class="data" id="dataTable">
+      <thead><tr><th>Point</th><th>🤖 Robots</th><th>🍕 Pizzas</th><th></th></tr></thead>
+      <tbody>
+        <tr id="row-0"><td><b>A</b></td><td>0</td><td>100</td><td></td></tr>
+        <tr id="row-1"><td><b>B</b></td><td>20</td><td>80</td><td></td></tr>
+        <tr id="row-2"><td><b>C</b></td><td>40</td><td>55</td><td></td></tr>
+        <tr id="row-3"><td><b>D</b></td><td>60</td><td>25</td><td></td></tr>
+        <tr id="row-4"><td><b>E</b></td><td>80</td><td>0</td><td></td></tr>
+      </tbody>
+    </table>
+
+    <!-- STEP BOX -->
+    <div class="step-box" id="stepBox">
+      <div class="step-num" id="stepNum">Step 1 of 3</div>
+      <div class="step-inst" id="stepInst">Plot Point A on the graph</div>
+      <div class="step-sub" id="stepSub">Hover the graph to see coordinates, then click where Robots = 0, Pizzas = 100 should go.<br><span class="esp">Pasa el cursor para ver coordenadas, luego haz clic.</span></div>
+    </div>
+
+    <!-- CONTROLS (hidden until curve drawn) -->
+    <div id="shiftControls" style="display:none;">
+      <div class="section-title" style="margin-top:4px;">Explore Shifts / <span class="esp">Explorar Cambios</span></div>
+      <div style="margin-top:6px;">
+        <button class="btn btn-green" onclick="showTechShift()" id="btnTech">⬆ Q2: Show Tech Shift</button>
+        <button class="btn btn-orange" onclick="showDroughtShift()" id="btnDrought">⬇ Q3: Show Drought Shift</button>
+        <button class="btn btn-gray" id="btnReset" onclick="resetAll()">↺ Start Over</button>
+      </div>
+      <div class="legend" style="margin-top:8px;">
+        <div style="font-size:11px;font-weight:bold;color:#444;margin-bottom:3px;">Legend</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#1F4E79;"></span> Your plotted points</div>
+        <div class="legend-item"><span class="legend-line" style="background:#1F4E79;height:3px;"></span> PPC curve</div>
+        <div class="legend-item"><span class="legend-line" style="background:#375623;border-top:2px dashed #375623;height:0;"></span> Tech shift (Q2)</div>
+        <div class="legend-item"><span class="legend-line" style="background:#8B0000;border-top:2px dashed #8B0000;height:0;"></span> Drought shift (Q3)</div>
+        <div class="legend-item"><span class="legend-dot" style="background:#e74c3c;border:2px solid #c0392b;"></span> Your Q1 point</div>
+      </div>
+    </div>
+
+  </div><!-- end left-panel -->
+
+  <!-- RIGHT PANEL -->
+  <div class="right-panel">
+    <div class="graph-title">
+      Production Possibilities Curve / <span style="color:#C55A11;font-style:italic;font-size:11px;">Frontera de Posibilidades de Producción</span>
+    </div>
+    <canvas id="graphCanvas" width="540" height="430"></canvas>
+    <div id="coordDisplay">Hover over the graph to see coordinates / <span class="esp">Pasa el cursor para ver coordenadas</span></div>
+    <div id="feedback" class="info"></div>
+  </div>
+
+</div><!-- end .main -->
+
+<!-- ══ QUESTIONS ══════════════════════════════════════════════ -->
+<div class="questions">
+  <div class="q-title">
+    Guided Questions / <span style="color:#C55A11;font-style:italic;font-size:12px;">Preguntas Guiadas</span>
+    <span style="font-size:11px;font-weight:normal;color:#888;margin-left:8px;">— Answer each question after completing the graph step above.</span>
+  </div>
+
+  <div class="q-grid">
+
+    <!-- Q1 -->
+    <div class="q-box">
+      <div class="q-label">Q1 — Classify a Point</div>
+      <div class="q-text">After drawing your curve, click somewhere on the graph at approximately <strong>Robots = 30, Pizzas = 80</strong>. Use the coordinate display to get close. Is that point efficient, inefficient, or impossible?</div>
+      <div class="q-esp">Después de trazar tu curva, haz clic en Robots = 30, Pizzas = 80 aproximadamente. ¿Es ese punto eficiente, ineficiente o imposible?</div>
+      <div class="radio-group">
+        <label><input type="radio" name="q1a" value="efficient"> Efficient — ON the curve / En la curva</label>
+        <label><input type="radio" name="q1a" value="inefficient"> Inefficient — INSIDE the curve / Dentro de la curva</label>
+        <label><input type="radio" name="q1a" value="impossible"> Impossible — OUTSIDE the curve / Fuera de la curva</label>
+      </div>
+      <div class="q-text">Explain why: / <span class="esp">Explica por qué:</span></div>
+      <textarea id="q1b" placeholder="That point is ___ because the curve shows... / Ese punto es ___ porque la curva muestra..."></textarea>
+    </div>
+
+    <!-- Q2 -->
+    <div class="q-box q2">
+      <div class="q-label">Q2 — Technology Improves</div>
+      <div class="q-text">Click <strong>"Q2: Show Tech Shift"</strong>. A new technology makes robots <strong>twice as fast to produce</strong>. Describe what changed on the graph and why only one end of the curve moved.</div>
+      <div class="q-esp">Haz clic en "Q2: Show Tech Shift". Una nueva tecnología hace los robots el doble de rápido. Describe qué cambió y por qué solo un extremo de la curva se movió.</div>
+      <div class="radio-group">
+        <label><input type="radio" name="q2a" value="outward-robot"> Outward on robot axis only / Hacia afuera solo en el eje de robots</label>
+        <label><input type="radio" name="q2a" value="inward-robot"> Inward on robot axis only / Hacia adentro solo en eje de robots</label>
+        <label><input type="radio" name="q2a" value="outward-both"> Outward on BOTH axes / Hacia afuera en ambos ejes</label>
+        <label><input type="radio" name="q2a" value="inward-both"> Inward on BOTH axes / Hacia adentro en ambos ejes</label>
+      </div>
+      <textarea id="q2b" placeholder="The curve shifted ___ because the technology only improved robots, not pizzas. This means... / La curva se desplazó ___ porque..."></textarea>
+    </div>
+
+    <!-- Q3 -->
+    <div class="q-box q3">
+      <div class="q-label">Q3 — A Drought Hits</div>
+      <div class="q-text">Click <strong>"Q3: Show Drought Shift"</strong>. A drought wipes out <strong>20% of farm workers</strong>. Describe what changed and why only one end of the curve moved this time.</div>
+      <div class="q-esp">Haz clic en "Q3: Show Drought Shift". Una sequía elimina el 20% de los trabajadores agrícolas. Describe qué cambió y por qué solo un extremo de la curva se movió.</div>
+      <div class="radio-group">
+        <label><input type="radio" name="q3a" value="inward-pizza"> Inward on pizza axis only / Hacia adentro solo en el eje de pizzas</label>
+        <label><input type="radio" name="q3a" value="outward-pizza"> Outward on pizza axis only / Hacia afuera solo en eje de pizzas</label>
+        <label><input type="radio" name="q3a" value="outward-both"> Outward on BOTH axes / Hacia afuera en ambos ejes</label>
+        <label><input type="radio" name="q3a" value="inward-both"> Inward on BOTH axes / Hacia adentro en ambos ejes</label>
+      </div>
+      <textarea id="q3b" placeholder="The curve shifted ___ because the drought only affected farm workers, not robot factories. This means... / La curva se desplazó ___ porque..."></textarea>
+    </div>
+
+    <!-- Q4 — RELATABLE SCENARIO -->
+    <div class="q-box q4">
+      <div class="q-label">Q4 — Your World, Your PPC</div>
+      <div class="q-text">Think about something in <strong>your own life, your school, or your neighborhood</strong> where resources (time, people, space, equipment) are <strong>NOT being used to their full potential</strong>.</div>
+      <div class="q-esp">Piensa en algo en <strong>tu propia vida, tu escuela o tu vecindario</strong> donde los recursos (tiempo, personas, espacio, equipos) <strong>NO se están usando a su máximo potencial</strong>.</div>
+      <div class="q-text" style="margin-top:5px;">Describe the situation: / <span class="esp">Describe la situación:</span></div>
+      <input id="q4a" class="short-input" type="text" placeholder="Example: Empty gym at lunch, unused library computers, my free period I spend on my phone... / Ejemplo: El gimnasio vacío a la hora del almuerzo...">
+      <div class="q-text" style="margin-top:6px;">What resources are being wasted? What would it take to move toward the curve? / <span class="esp">¿Qué recursos se desperdician? ¿Qué se necesitaría para aprovecharlos?</span></div>
+      <textarea id="q4b" placeholder="The wasted resource is ___ because ___. To move toward the curve, we would need to... / El recurso desperdiciado es ___ porque ___. Para acercarnos a la curva, necesitaríamos..."></textarea>
+    </div>
+
+  </div><!-- end q-grid -->
+
+  <!-- CONFIDENCE -->
+  <div class="conf-box">
+    <div class="q-label" style="color:#e65100;">Quick Check — How confident do you feel about PPC graphs? / ¿Qué tan seguro/a te sientes con las gráficas de FPP?</div>
+    <div class="radio-group">
+      <label><input type="radio" name="conf" value="very"> 🟢 Very confident / Muy seguro/a</label>
+      <label><input type="radio" name="conf" value="mostly"> 🟡 Mostly / Bastante</label>
+      <label><input type="radio" name="conf" value="alittle"> 🟠 A little lost / Un poco perdido/a</label>
+      <label><input type="radio" name="conf" value="confused"> 🔴 Confused — I need help / Necesito ayuda</label>
+    </div>
+    <input id="confNote" class="short-input" type="text" placeholder="(Optional) Any questions? / (Opcional) ¿Alguna pregunta?" style="margin-top:8px;">
+  </div>
+</div>
+
+<!-- BOTTOM BAR -->
+<div class="bottom-bar">
+  <span>Saddleback High School &nbsp;•&nbsp; Economics &nbsp;•&nbsp; Mr. Gibson &nbsp;•&nbsp; Room 701 &nbsp;•&nbsp; Day 3</span>
+  <div style="display:flex;align-items:center;">
+    <span id="submitError"></span>
+    <button class="btn-submit" id="submitBtn" onclick="submitAnswers()">✓ Submit Answers</button>
+    <button class="btn-print" onclick="window.print()">🖨 Print</button>
+  </div>
+</div>
+
+<!-- SUCCESS -->
+<div id="successOverlay">
+  <div class="success-card">
+    <h2>✓ Submitted!</h2>
+    <p>Your answers have been saved.<br>
+    <span style="color:#C55A11;font-style:italic;">¡Tus respuestas han sido guardadas.</span><br><br>
+    Great work today!<br><span style="color:#C55A11;font-style:italic;">¡Buen trabajo hoy!</span></p>
+    <button onclick="document.getElementById('successOverlay').classList.remove('show')">Close</button>
+  </div>
+</div>
+
+<!-- ══ GRAPH ENGINE ══════════════════════════════════════════ -->
+<script>
+const canvas = document.getElementById('graphCanvas');
+const ctx    = canvas.getContext('2d');
+
+const ML=65, MR=22, MT=26, MB=52;
+const W = canvas.width - ML - MR;
+const H = canvas.height - MT - MB;
+const X_MAX=100, Y_MAX=120;
+
+// Correct data points
+const CORRECT = [
+  {label:'A', rx:0,  py:100},
+  {label:'B', rx:20, py:80},
+  {label:'C', rx:40, py:55},
+  {label:'D', rx:60, py:25},
+  {label:'E', rx:80, py:0},
+];
+const TOLERANCE = 9; // units — how close student needs to click
+
+// State
+let phase         = 'plotting'; // 'plotting' | 'curve' | 'done'
+let nextPoint     = 0;          // which point student needs to plot (0–4)
+let studentPlots  = [];         // {rx,py,correct} for each plotted point
+let curveDrawn    = false;
+let techShown     = false;
+let droughtShown  = false;
+let q1Point       = null;       // student's Q1 click
+
+function toCanvasX(rx){ return ML + (rx/X_MAX)*W; }
+function toCanvasY(py){ return MT + H - (py/Y_MAX)*H; }
+function toDataX(cx){ return ((cx-ML)/W)*X_MAX; }
+function toDataY(cy){ return ((MT+H-cy)/H)*Y_MAX; }
+
+function catmullRom(c, pts, color, width, dashed){
+  if(pts.length<2)return;
+  c.save(); c.strokeStyle=color; c.lineWidth=width;
+  if(dashed) c.setLineDash([9,5]); else c.setLineDash([]);
+  c.beginPath();
+  for(let i=0;i<pts.length-1;i++){
+    const p0=pts[Math.max(0,i-1)],p1=pts[i],p2=pts[i+1],p3=pts[Math.min(pts.length-1,i+2)];
+    if(i===0) c.moveTo(p1.x,p1.y);
+    for(let t=0;t<=1;t+=0.02){
+      const t2=t*t,t3=t2*t;
+      const x=0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3);
+      const y=0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3);
+      c.lineTo(x,y);
+    }
+  }
+  c.stroke(); c.restore();
+}
+
+function drawGrid(){
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  ctx.save();
+  ctx.strokeStyle='#e0e6f0'; ctx.lineWidth=1;
+  for(let v=0;v<=X_MAX;v+=20){const x=toCanvasX(v);ctx.beginPath();ctx.moveTo(x,MT);ctx.lineTo(x,MT+H);ctx.stroke();}
+  for(let v=0;v<=Y_MAX;v+=20){const y=toCanvasY(v);ctx.beginPath();ctx.moveTo(ML,y);ctx.lineTo(ML+W,y);ctx.stroke();}
+  ctx.strokeStyle='#1F4E79'; ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(ML,MT);ctx.lineTo(ML,MT+H);ctx.moveTo(ML,MT+H);ctx.lineTo(ML+W+7,MT+H);ctx.stroke();
+  ctx.fillStyle='#1F4E79';
+  ctx.beginPath();ctx.moveTo(ML+W+7,MT+H-5);ctx.lineTo(ML+W+17,MT+H);ctx.lineTo(ML+W+7,MT+H+5);ctx.fill();
+  ctx.beginPath();ctx.moveTo(ML-5,MT);ctx.lineTo(ML,MT-9);ctx.lineTo(ML+5,MT);ctx.fill();
+  ctx.fillStyle='#333'; ctx.font='11px Calibri,Arial'; ctx.textAlign='center';
+  for(let v=0;v<=X_MAX;v+=20){ctx.fillText(v,toCanvasX(v),MT+H+13);}
+  ctx.textAlign='right';
+  for(let v=0;v<=Y_MAX;v+=20){ctx.fillText(v,ML-5,toCanvasY(v)+4);}
+  ctx.fillStyle='#1F4E79'; ctx.font='bold 11px Calibri,Arial';
+  ctx.textAlign='center'; ctx.fillText('Robots (units) / Robots (unidades)',ML+W/2,MT+H+30);
+  ctx.save();ctx.translate(14,MT+H/2);ctx.rotate(-Math.PI/2);ctx.fillText('Pizzas (units) / Pizzas (unidades)',0,0);ctx.restore();
+  ctx.restore();
+}
+
+function drawStudentPlots(){
+  studentPlots.forEach((pt,i)=>{
+    const x=toCanvasX(pt.rx), y=toCanvasY(pt.py);
+    ctx.save();
+    ctx.fillStyle   = pt.correct ? '#1F4E79' : '#f39c12';
+    ctx.strokeStyle = 'white'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(x,y,7,0,Math.PI*2); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#1F4E79'; ctx.font='bold 12px Calibri,Arial';
+    const lbl = CORRECT[i].label;
+    const offX = lbl==='A'?-12: lbl==='E'?12:0;
+    const offY = lbl==='E'?14:-11;
+    ctx.textAlign = lbl==='A'?'left':'center';
+    ctx.fillText(lbl, x+offX, y+offY);
+    ctx.restore();
+  });
+}
+
+function drawCurve(){
+  if(!curveDrawn) return;
+  const pts = CORRECT.map(p=>({x:toCanvasX(p.rx),y:toCanvasY(p.py)}));
+  catmullRom(ctx, pts, '#1F4E79', 3, false);
+}
+
+function drawShifts(){
+  if(techShown){
+    const tp=[{rx:0,py:100},{rx:40,py:80},{rx:80,py:55},{rx:100,py:30}]
+      .map(p=>({x:toCanvasX(Math.min(p.rx,X_MAX)),y:toCanvasY(p.py)}));
+    catmullRom(ctx,tp,'#375623',2.5,true);
+    ctx.save();ctx.fillStyle='#375623';ctx.font='bold 10px Calibri,Arial';ctx.textAlign='left';
+    ctx.fillText('⬆ Tech improvement (Q2)',toCanvasX(44),toCanvasY(68)-6);ctx.restore();
+  }
+  if(droughtShown){
+    const dp=[{rx:0,py:80},{rx:20,py:64},{rx:40,py:44},{rx:60,py:20},{rx:80,py:0}]
+      .map(p=>({x:toCanvasX(p.rx),y:toCanvasY(p.py)}));
+    catmullRom(ctx,dp,'#8B0000',2.5,true);
+    ctx.save();ctx.fillStyle='#8B0000';ctx.font='bold 10px Calibri,Arial';ctx.textAlign='left';
+    ctx.fillText('⬇ Drought shift (Q3)',toCanvasX(2),toCanvasY(56)+14);ctx.restore();
+  }
+}
+
+function drawQ1Point(){
+  if(!q1Point) return;
+  const x=toCanvasX(q1Point.rx), y=toCanvasY(q1Point.py);
+  ctx.save();
+  ctx.fillStyle='#e74c3c'; ctx.strokeStyle='white'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,6,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#c0392b'; ctx.font='bold 10px Calibri,Arial'; ctx.textAlign='center';
+  ctx.fillText('Your Q1 point',x,y-10);
+  ctx.restore();
+}
+
+function redraw(){
+  drawGrid();
+  drawCurve();
+  drawShifts();
+  drawStudentPlots();
+  drawQ1Point();
+}
+
+// ── STEP UI ────────────────────────────────────────────────
+function updateStepUI(){
+  const box  = document.getElementById('stepBox');
+  const num  = document.getElementById('stepNum');
+  const inst = document.getElementById('stepInst');
+  const sub  = document.getElementById('stepSub');
+
+  if(phase==='plotting' && nextPoint < 5){
+    const pt = CORRECT[nextPoint];
+    box.className='step-box';
+    num.textContent = 'Step 1 of 3 — Plot the Points';
+    inst.textContent = `Click to plot Point ${pt.label} (Robots=${pt.rx}, Pizzas=${pt.py})`;
+    sub.innerHTML = `Watch the coordinate display at the bottom of the graph to find the right spot.<br><span class="esp">Observa las coordenadas para encontrar el lugar correcto.</span>`;
+    // Highlight active row
+    for(let i=0;i<5;i++){
+      const row = document.getElementById('row-'+i);
+      row.className = i<nextPoint ? 'done' : i===nextPoint ? 'active' : '';
+      row.cells[3].textContent = i<nextPoint ? '✓' : '';
+      if(i<nextPoint) row.cells[3].className='check';
+    }
+  } else if(phase==='plotting' && nextPoint===5){
+    box.className='step-box';
+    num.textContent = 'Step 2 of 3 — Connect the Points';
+    inst.textContent = 'All 5 points plotted! Now draw your curve.';
+    sub.innerHTML = 'Click the button below to draw the PPC through your points.<br><span class="esp">Haz clic abajo para trazar la curva FPP.</span>';
+    // Show connect button
+    box.innerHTML = `
+      <div class="step-num">Step 2 of 3 — Connect the Points</div>
+      <div class="step-inst">All 5 points plotted! 🎉</div>
+      <div class="step-sub" style="margin-bottom:8px;">Now draw the curve through your points.<br><span class="esp">Ahora traza la curva a través de tus puntos.</span></div>
+      <button class="btn btn-blue" onclick="connectPoints()">📈 Draw My PPC Curve</button>
+    `;
+  } else if(phase==='curve'){
+    box.className='step-box success';
+    box.innerHTML = `
+      <div class="step-num" style="color:#375623;">Step 3 of 3 — Answer the Questions</div>
+      <div class="step-inst" style="color:#375623;">✓ Curve drawn! Scroll down to answer Q1–Q4.</div>
+      <div class="step-sub">Use the shift buttons on the left for Q2 and Q3.<br><span class="esp">Usa los botones de desplazamiento para Q2 y Q3.</span></div>
+    `;
+    document.getElementById('shiftControls').style.display='block';
+  }
+}
+
+function connectPoints(){
+  curveDrawn = true;
+  phase = 'curve';
+  // Mark all rows done
+  for(let i=0;i<5;i++){
+    const row = document.getElementById('row-'+i);
+    row.className='done';
+    row.cells[3].textContent='✓';
+    row.cells[3].className='check';
+  }
+  updateStepUI();
+  setFeedback('✓ Curve drawn! Use the shift buttons for Q2 and Q3, then scroll down to answer all questions.','ok');
+  redraw();
+}
+
+function showTechShift(){
+  techShown=!techShown;
+  document.getElementById('btnTech').textContent = techShown?'⬆ Hide Tech Shift':'⬆ Q2: Show Tech Shift';
+  redraw();
+}
+function showDroughtShift(){
+  droughtShown=!droughtShown;
+  document.getElementById('btnDrought').textContent = droughtShown?'⬇ Hide Drought Shift':'⬇ Q3: Show Drought Shift';
+  redraw();
+}
+
+function resetAll(){
+  phase='plotting'; nextPoint=0; studentPlots=[]; curveDrawn=false;
+  techShown=false; droughtShown=false; q1Point=null;
+  document.getElementById('shiftControls').style.display='none';
+  document.getElementById('btnTech').textContent='⬆ Q2: Show Tech Shift';
+  document.getElementById('btnDrought').textContent='⬇ Q3: Show Drought Shift';
+  setFeedback('','info');
+  updateStepUI();
+  redraw();
+}
+
+function setFeedback(msg, type){
+  const el=document.getElementById('feedback');
+  el.textContent=msg; el.className=type;
+}
+
+// ── CANVAS CLICK ───────────────────────────────────────────
+canvas.addEventListener('click',function(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+  const cx=(e.clientX-rect.left)*sx, cy=(e.clientY-rect.top)*sy;
+  const rx=toDataX(cx), py=toDataY(cy);
+  if(rx<0||rx>X_MAX||py<0||py>Y_MAX) return;
+
+  if(phase==='plotting' && nextPoint<5){
+    const target = CORRECT[nextPoint];
+    const dist = Math.sqrt(Math.pow(rx-target.rx,2)+Math.pow(py-target.py,2));
+    if(dist<=TOLERANCE){
+      // Correct!
+      studentPlots.push({rx:target.rx, py:target.py, correct:true});
+      setFeedback(`✅ Point ${target.label} placed correctly!`,'ok');
+    } else {
+      // Off — accept but flag it
+      studentPlots.push({rx, py, correct:false});
+      setFeedback(`Point ${target.label} placed (a bit off — correct position shown in blue after connecting).`,'info');
+    }
+    nextPoint++;
+    updateStepUI();
+    redraw();
+
+  } else if(phase==='curve'){
+    // Q1 — let student drop a point anywhere to classify it
+    q1Point = {rx, py};
+    setFeedback(`📍 Q1 point placed at Robots ≈ ${Math.round(rx)}, Pizzas ≈ ${Math.round(py)}. Now select its classification below.`,'info');
+    redraw();
+  }
+});
+
+// ── HOVER COORDS ───────────────────────────────────────────
+canvas.addEventListener('mousemove',function(e){
+  const rect=canvas.getBoundingClientRect();
+  const sx=canvas.width/rect.width, sy=canvas.height/rect.height;
+  const rx=toDataX((e.clientX-rect.left)*sx), py=toDataY((e.clientY-rect.top)*sy);
+  const d=document.getElementById('coordDisplay');
+  if(rx>=0&&rx<=X_MAX&&py>=0&&py<=Y_MAX)
+    d.textContent='📍 Robots = '+Math.round(rx)+', Pizzas = '+Math.round(py);
+  else
+    d.innerHTML='Hover over the graph to see coordinates / <span class="esp">Pasa el cursor para ver coordenadas</span>';
+});
+canvas.addEventListener('mouseleave',function(){
+  document.getElementById('coordDisplay').innerHTML='Hover over the graph to see coordinates / <span class="esp">Pasa el cursor para ver coordenadas</span>';
+});
+
+// ── SUBMIT ─────────────────────────────────────────────────
+function getRadio(name){ const el=document.querySelector('input[name="'+name+'"]:checked'); return el?el.value:''; }
+
+async function submitAnswers(){
+  const name=document.getElementById('studentName').value.trim();
+  const period=document.getElementById('studentPeriod').value;
+  const errEl=document.getElementById('submitError');
+  const btn=document.getElementById('submitBtn');
+  if(!name||!period){ errEl.style.display='inline'; errEl.textContent='⚠ Name and period required.'; return; }
+  errEl.style.display='none';
+  if(!SUBMIT_URL||SUBMIT_URL==='PASTE_YOUR_WEB_APP_URL_HERE'){
+    alert('Teacher setup needed: paste the web app URL in the HTML file.'); return;
+  }
+  btn.disabled=true; btn.textContent='Submitting…';
+  const payload={
+    name, period,
+    date:     document.getElementById('studentDate').value.trim(),
+    q1a:      getRadio('q1a'),
+    q1b:      document.getElementById('q1b').value.trim(),
+    q2a:      getRadio('q2a'),
+    q2b:      document.getElementById('q2b').value.trim(),
+    q3a:      getRadio('q3a'),
+    q3b:      document.getElementById('q3b').value.trim(),
+    q4a:      document.getElementById('q4a').value.trim(),
+    q4b:      document.getElementById('q4b').value.trim(),
+    conf:     getRadio('conf'),
+    confNote: document.getElementById('confNote').value.trim(),
+    timestamp:new Date().toLocaleString(),
+  };
+  try{
+    await fetch(SUBMIT_URL,{method:'POST',body:JSON.stringify(payload),mode:'no-cors'});
+    document.getElementById('successOverlay').classList.add('show');
+    btn.textContent='✓ Submitted!';
+  }catch(err){
+    btn.disabled=false; btn.textContent='✓ Submit Answers';
+    errEl.style.display='inline'; errEl.textContent='⚠ Submission failed. Try again.';
+  }
+}
+
+// Init
+updateStepUI();
+redraw();
+</script>
+</body>
+</html>
